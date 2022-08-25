@@ -1,0 +1,42 @@
+Created account root with password 123456
+Only the root user can add new users
+Successfully logged in as root
+User root is already logged into the system
+Created account Chewbacca with password wookie
+Created account Luke with password jedi
+Created account Han with password smuggler
+Created account Leia with password princess
+Created account Yoda with password master
+Created a new group called Jedi
+Added user Luke to group Jedi
+Added user Yoda to group Jedi
+Created a new group called Rebel
+Added user Luke to group Rebel
+Added user Leia to group Rebel
+Added user Han to group Rebel
+Added user Chewbacca to group Rebel
+Created a new file called JediTexts.txt which is owned by root
+Successfully changed the group of JediTexts.txt to Jedi
+Logging out of user root
+Successfully logged in as Han
+You do not have the appropriate permissions to read file JediTexts.txt
+Created a new file called Falcon which is owned by Han
+Falcon: Han nil rw- --- ---
+Successfully changed permissions for Falcon to --x --x --x
+You do not have the appropriate permissions to write to file Falcon
+Logging out of user Han
+Successfully logged in as Luke
+Falcon: Han nil --x --x --x
+Executed Falcon successfully
+JediTexts.txt: root Jedi rw- --- ---
+Only the root user can change the owner of a file
+Logging out of user Luke
+Successfully logged in as root
+Changed the owner of the file JediTexts.txt to Yoda
+Logging out of user root
+Successfully logged in as Yoda
+Successfully changed permissions for JediTexts.txt to rwx --- ---
+JediTexts.txt: Yoda Jedi rwx --- ---
+Logging out of user Yoda
+Writing groups.txt and files.txt
+End of program execution

@@ -1,0 +1,41 @@
+useradd root 123456
+useradd Chewbacca wookie
+login root 123456
+login Chewbacca wookie
+useradd Chewbacca wookie
+useradd Luke jedi
+useradd Han smuggler
+useradd Leia princess
+useradd Yoda master
+groupadd Jedi
+usergrp Luke Jedi
+usergrp Yoda Jedi
+groupadd Rebel
+usergrp Luke Rebel
+usergrp Leia Rebel
+usergrp Han Rebel
+usergrp Chewbacca Rebel
+mkfile JediTexts.txt
+chgrp JediTexts.txt Jedi
+logout
+login Han smuggler
+read JediTexts.txt
+mkfile Falcon
+ls Falcon
+chmod Falcon --x --x --x
+write Falcon Star Wars
+logout
+login Luke jedi
+ls Falcon
+execute Falcon
+ls JediTexts.txt
+chown JediTexts.txt Yoda
+logout
+login root 123456
+chown JediTexts.txt Yoda
+logout
+login Yoda master
+chmod JediTexts.txt rwx --- ---
+ls JediTexts.txt
+logout
+end

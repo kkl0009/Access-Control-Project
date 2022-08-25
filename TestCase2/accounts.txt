@@ -1,0 +1,6 @@
+Username: root   Password: 123456
+Username: Chewbacca   Password: wookie
+Username: Luke   Password: jedi
+Username: Han   Password: smuggler
+Username: Leia   Password: princess
+Username: Yoda   Password: master

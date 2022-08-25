@@ -1,0 +1,612 @@
+"""
+Name: Kollin Labowski
+Date: March 25, 2022
+Class: CS 465, West Virginia University
+
+Description: This program was created for programming assignment 2. It simulates a simple CLI file system, and supports the following commands:
+	
+	useradd [username] [password]
+	login [username] [password]
+	logout
+	groupadd [groupname]
+	usergrp [username] [groupname]
+	mkfile [filename]
+	chmod [filename] [rwx] [rwx] [rwx]
+	chown [filename] [username]
+	chgrp [filename] [groupname]
+	read [filename]
+	write [filename] [text]
+	execute [filename]
+	ls [filename]
+	end
+
+Throughout the program, names are limited to 30 characters or less, and all names and commands are case sensitive
+"""
+
+#!/usr/bin/python3
+
+import sys
+
+# This variable is used to determine whether the "end" command was called, in which case the program execution will terminate
+end_of_program = False
+
+# Reset audit.txt and accounts.txt files so they can be filled with data only from this execution of the program
+auditFile = open("audit.txt", "w")
+auditFile.write("")
+auditFile.close()
+
+accountFile = open("accounts.txt", "w")
+accountFile.write("")
+accountFile.close()
+
+# This field keeps track of the username of the user currently logged in
+current_user = ""
+
+# (Group_Name, [List_of_Usernames])
+groups_list = []
+
+# (File_Name, Owner_Name, Group_Name, Owner_Permissions, Group_Permissions, All_Permissions)
+files_list = []
+
+"""
+This function is used to handle the input from the file and call the necessary command for each input line
+"""
+def command_handler(inputText):
+	inputList = inputText.split()
+	
+	if(inputList[0] == "useradd"):
+		if(len(inputList) != 3):
+			update_audit("Invalid command entered! (\"useradd\" case)")
+		else:
+			useradd_command(inputList[1], inputList[2])
+	elif(inputList[0] == "login"):
+		if(len(inputList) != 3):
+			update_audit("Invalid command entered! (\"login\" case)")
+		else:
+			login_command(inputList[1], inputList[2])
+	elif(inputList[0] == "logout"):
+		if(len(inputList) != 1):
+			update_audit("Invalid command entered! (\"logout\" case)")
+		else:
+			logout_command()
+	elif(inputList[0] == "groupadd"):
+		if(len(inputList) != 2):
+			update_audit("Invalid command entered! (\"groupadd\" case)")
+		else:
+			groupadd_command(inputList[1])
+	elif(inputList[0] == "usergrp"):
+		if(len(inputList) != 3):
+			update_audit("Invalid command entered! (\"usergrp\" case)")
+		else:
+			usergrp_command(inputList[1], inputList[2])
+	elif(inputList[0] == "mkfile"):
+		if(len(inputList) != 2):
+			update_audit("Invalid command entered! (\"mkfile\" case)")
+		else:
+			mkfile_command(inputList[1])
+	elif(inputList[0] == "chmod"):
+		if(len(inputList) != 5):
+			update_audit("Invalid command entered! (\"chmod\" case)")
+		else:
+			chmod_command(inputList[1], inputList[2], inputList[3], inputList[4])
+	elif(inputList[0] == "chown"):
+		if(len(inputList) != 3):
+			update_audit("Invalid command entered! (\"chown\" case)")
+		else:
+			chown_command(inputList[1], inputList[2])
+	elif(inputList[0] == "chgrp"):
+		if(len(inputList) != 3):
+			update_audit("Invalid command entered! (\"chgrp\" case)")
+		else:
+			chgrp_command(inputList[1], inputList[2])
+	elif(inputList[0] == "read"):
+		if(len(inputList) != 2):
+			update_audit("Invalid command entered! (\"read\" case)")
+		else:
+			read_command(inputList[1])
+	elif(inputList[0] == "write"):
+		if(len(inputList) < 2):
+			update_audit("Invalid command entered! (\"write\" case)")
+		else:
+			message = ""
+			for i in range(2, len(inputList)):
+				message += (inputList[i] + " ")
+			write_command(inputList[1], message)
+	elif(inputList[0] == "execute"):
+		if(len(inputList) != 2):
+			update_audit("Invalid command entered! (\"execute\" case)")
+		else:
+			execute_command(inputList[1])
+	elif(inputList[0] == "ls"):
+		if(len(inputList) != 2):
+			update_audit("Invalid command entered! (\"ls\" case)")
+		else:
+			ls_command(inputList[1])
+	elif(inputList[0] == "end"):
+		if(len(inputList) != 1):
+			update_audit("Invalid command entered! (\"end\" case)")
+		else:
+			end_command()
+	else:
+		update_audit("Invalid command entered")
+
+"""
+This function is used to implement the useradd command. The command adds a new user to the system, and can only be run by the root user.
+"""
+def useradd_command(username, password):
+	if(verify_name(username) and verify_password(password)):
+		if(username != "root" and current_user != "root"):
+			update_audit("Only the root user can add new users")
+		else:
+			if(add_account(username, password)):
+				update_audit("Created account " + username + " with password " + password)
+			else:
+				update_audit("There is already an account named \"" + username + "\"")
+
+"""
+This function is used to implement the login command. It allows the user to login to any account that exists in the accounts.txt file.
+"""
+def login_command(username, password):
+	global current_user
+	if(current_user != ""):
+		update_audit("User " + current_user + " is already logged into the system")
+	elif(verify_name(username) and verify_password(password)):
+		if(check_creds(username, password)):
+			current_user = username
+			update_audit("Successfully logged in as " + username)
+		else:
+			update_audit("Invalid login credentials, login failed")
+
+"""
+This function is used to implement the logout command. It allows a user that is logged in to an account to log out of the account.
+"""
+def logout_command():
+	global current_user
+	if(current_user == ""):
+		update_audit("You are not currently logged into an account")
+	else:
+		update_audit("Logging out of user " + current_user)
+		current_user = ""
+
+"""
+This function is used to add a new group to the file system. Groups can be used to handle file permissions for multiple people at once.
+"""
+def groupadd_command(groupname):
+	global groups_list
+	global current_user
+
+	if(current_user != "root"):
+		update_audit("Only the root user can create new groups")
+	elif(groupname == "nil"):
+		update_audit("Cannot create a group named \"" + groupname + "\"")
+	elif(verify_name(groupname)):
+		for group in groups_list:
+			if(group[0] == groupname):
+				update_audit("A group with the name " + groupname + " already exists")
+				return
+
+		groups_list.append((groupname, []))
+		update_audit("Created a new group called " + groupname)
+
+"""
+This command allows the root user to add a user to a group. This will add them to the group list at the top, but not yet to the groups.txt file.
+"""
+def usergrp_command(username, groupname):
+	global groups_list
+	global current_user
+
+	if(current_user != "root"):
+		update_audit("Only the root user can add users to a group")
+	elif(verify_name(username) and verify_name(groupname)):
+		if(check_for_account(username)):
+			for group in groups_list:
+				if(group[0] == groupname):
+					if(not username in group[1]):
+						group[1].append(username)
+						update_audit("Added user " + username + " to group " + groupname)
+						return
+					else:
+						update_audit("User " + username + " is already a part of group " + groupname)
+						return
+			update_audit("A group called " + groupname + " does not exist")
+		else:
+			update_audit("A user named " + username + " does not exist")
+
+"""
+This function is used for the mkfile command. It will create a new file with default permissions rw- --- ---, owned by the creator of the file.
+"""
+def mkfile_command(filename):
+	global current_user
+
+	if(current_user == ""):
+		update_audit("You must be logged in to create a file")
+	elif(verify_file(filename)):
+		if(add_file(filename, current_user, "nil", "rw-", "---", "---")):
+			newFile = open(filename, "w")
+			update_audit("Created a new file called " + filename + " which is owned by " + current_user)
+			newFile.close()
+
+"""
+This function is used for the chmod command. It changes the permissions of the file to those input by the user.
+"""
+def chmod_command(filename, perm1, perm2, perm3):
+	if(current_user == ""):
+		update_audit("You must be logged in to change file permissions")
+	elif(verify_file(filename)):
+		if(update_perm(filename, perm1, perm2, perm3)):
+			update_audit("Successfully changed permissions for " + filename + " to " + perm1 + " " + perm2 + " " + perm3)
+
+"""
+This function is used for the chown command. It allows the root user to change the owner of a file.
+"""
+def chown_command(filename, username):
+	if(current_user != "root"):
+		update_audit("Only the root user can change the owner of a file")
+	elif(verify_file(filename) and verify_name(username)):
+		if(update_owner(filename, username)):
+			update_audit("Changed the owner of the file " + filename + " to " + username)
+
+"""
+This function is used for the chgrp command. It allows a user to change the group a file belongs to.
+"""
+def chgrp_command(filename, groupname):
+	if(current_user == ""):
+		update_audit("You must be logged in to change the group of a file")
+	elif(verify_file(filename) and verify_name(groupname)):
+		if(in_group(groupname, current_user) or current_user == "root"):
+			if(update_group(filename, groupname)):
+				update_audit("Successfully changed the group of " + filename + " to " + groupname)
+		else:
+			update_audit("You are not a member of group " + groupname)
+
+"""
+This function is used for the read command. It allows the user to read a file if they have appropriate permissions.
+"""
+def read_command(filename):
+	if(current_user == ""):
+		update_audit("You must be logged in to read a file")
+	elif(verify_file(filename)):
+		fileInfo = fetch_file_info(filename)
+		if(fileInfo):
+			if(current_user == "root"):
+				read_file(filename)
+			elif(current_user == fileInfo[1] and fileInfo[3][0] == 'r'):
+				read_file(filename)
+			elif(in_group(fileInfo[2], current_user) and fileInfo[4][0] == 'r'):
+				read_file(filename)
+			elif(fileInfo[5][0] == 'r'):
+				read_file(filename)
+			else:
+				update_audit("You do not have the appropriate permissions to read file " + filename)
+		else:
+			update_audit("A file named " + filename + " does not exist")
+
+"""
+This function is used for the write command. It allows the user to write to a file if they have appropriate permissions.
+"""
+def write_command(filename, text):
+	if(current_user == ""):
+		update_audit("You must be logged in to write to a file")
+	elif(verify_file(filename)):
+		fileInfo = fetch_file_info(filename)
+		if(fileInfo):
+			if(current_user == "root"):
+				write_file(filename, text)
+			elif(current_user == fileInfo[1] and fileInfo[3][1] == 'w'):
+				write_file(filename, text)
+			elif(in_group(fileInfo[2], current_user) and fileInfo[4][1] == 'w'):
+				write_file(filename, text)
+			elif(fileInfo[5][1] == 'w'):
+				write_file(filename, text)
+			else:
+				update_audit("You do not have the appropriate permissions to write to file " + filename)
+		else:
+			update_audit("A file named " + filename + " does not exist")
+
+"""
+This function is used for the execute command. It allows the user to execute a file if they have appropriate permissions.
+"""
+def execute_command(filename):
+	if(current_user == ""):
+		update_audit("You must be logged in to execute a file")
+	elif(verify_file(filename)):
+		fileInfo = fetch_file_info(filename)
+		if(fileInfo):
+			if(current_user == "root"):
+				update_audit("Executed " + filename + " successfully")
+			elif(current_user == fileInfo[1] and fileInfo[3][2] == 'x'):
+				update_audit("Executed " + filename + " successfully")
+			elif(in_group(fileInfo[2], current_user) and fileInfo[4][2] == 'x'):
+				update_audit("Executed " + filename + " successfully")
+			elif(fileInfo[5][2] == 'x'):
+				update_audit("Executed " + filename + " successfully")
+			else:
+				update_audit("You do not have the appropriate permissions to execute file " + filename)
+		else:
+			update_audit("A file named " + filename + " does not exist")
+
+"""
+This function is used for the ls command. It allows the user to view the name, owner, group, and permissions for a particular file.
+"""
+def ls_command(filename):
+	global files_list
+
+	for file in files_list:
+		if(filename == file[0]):
+			update_audit(file[0] + ": " + file[1] + " " + file[2] + " " + file[3] + " " + file[4] + " " + file[5])
+			return
+	update_audit("A file with the name " + filename + " does not exist")
+
+"""
+This function is used for the end command. It is called at the end of program execution, and leads to the creation of the groups.txt and files.txt files.
+"""
+def end_command():
+	global end_of_program
+
+	update_audit("Writing groups.txt and files.txt")
+	group_file()
+	files_file()
+	end_of_program = True
+
+"""
+This function is used to determine whether an input name is valid according to project specifications
+"""
+def verify_name(inputName):
+	if(len(inputName) > 30):
+		update_audit("Invalid name entered")
+		return False
+
+	for ch in inputName:
+		if(ch == '\\' or ch == ':'): # Note: Whitespace is taken care of in the command handler
+			update_audit("Invalid name entered")
+			return False
+	return True
+
+"""
+This function is used to determine whether an input password is valid according to project specifications
+"""
+def verify_password(inputPassword):
+	if(len(inputPassword) > 30):
+		update_audit("Invalid name entered")
+		return False
+	return True
+
+"""
+This function is used to determine whether an input file name is valid according to project specifications
+"""
+def verify_file(inputFileName):
+	if(inputFileName == "accounts.txt" or inputFileName == "audit.txt" or inputFileName == "groups.txt" or inputFileName == "files.txt"):
+		update_audit("Attempted to access restricted file " + inputFileName)
+		return False
+	return True
+
+"""
+This function updates the audit file and prints to the terminal an input message
+"""
+def update_audit(message):
+	auditFile = open("audit.txt", "a")
+	auditFile.write(message + "\n")
+	auditFile.close()
+	print(message)
+
+"""
+This function is used to add an account to the accounts.txt file. Helper function of useradd command function
+"""
+def add_account(username, password):
+	accountFile = open("accounts.txt", "r")
+
+	currentLine = accountFile.readline()
+	while currentLine:
+		lineList = currentLine.split()
+		if(lineList[1] == username):
+			accountFile.close()
+			return False
+		currentLine = accountFile.readline()
+	accountFile.close()
+
+	accountFile = open("accounts.txt", "a")
+	accountFile.write("Username: " + username + "   Password: " + password + "\n")
+	accountFile.close()
+	return True
+
+"""
+This function determines whether input credits match what is in the accounts.txt file. Used as a helper function of login command function
+"""
+def check_creds(username, password):
+	accountFile = open("accounts.txt", "r")
+
+	currentLine = accountFile.readline()
+	while currentLine:
+		lineList = currentLine.split()
+		if(lineList[1] == username and lineList[3] == password):
+			accountFile.close()
+			return True
+		currentLine = accountFile.readline()
+	accountFile.close()
+	return False
+
+"""
+Determines whether an account with the given username appears in the accounts.txt file
+"""
+def check_for_account(username):
+	accountFile = open("accounts.txt", "r")
+
+	currentLine = accountFile.readline()
+	while currentLine:
+		lineList = currentLine.split()
+		if(lineList[1] == username):
+			accountFile.close()
+			return True
+		currentLine = accountFile.readline()
+	accountFile.close()
+	return False
+
+"""
+Adds a file to the file list at the top of the file, assuming a file with the given name doesn't already exist
+"""
+def add_file(name, owner, group, perm1, perm2, perm3):
+	global files_list
+
+	for file in files_list:
+		if(file[0] == name):
+			update_audit("A file with the name " + name + " already exists")
+			return False
+
+	files_list.append((name, owner, group, perm1, perm2, perm3))
+	return True
+
+"""
+Updates the permissions of the file with the given name
+"""
+def update_perm(name, perm1, perm2, perm3):
+	global files_list
+	global current_user
+
+	for file in files_list:
+		if(file[0] == name):
+			if(file[1] == current_user or current_user == "root"):
+				files_list.remove(file)
+				files_list.append((file[0], file[1], file[2], perm1, perm2, perm3))
+				return True
+			else:
+				update_audit("You are not the current owner of this file")
+				return False
+	update_audit("A file with the name " + name + " does not exist")
+	return False
+
+"""
+Updates the owner of the file with the given name
+"""
+def update_owner(name, owner):
+	global files_list
+	global current_user
+
+	for file in files_list:
+		if(file[0] == name):
+			files_list.remove(file)
+			files_list.append((file[0], owner, file[2], file[3], file[4], file[5]))
+			return True
+
+	update_audit("A file with the name " + name + " does not exist")
+	return False
+
+"""
+Updates the group of the file with the given name
+"""
+def update_group(name, group):
+	global files_list
+	global current_user
+
+	for file in files_list:
+		if(file[0] == name):
+			if(file[1] == current_user or current_user == "root"):
+				files_list.remove(file)
+				files_list.append((file[0], file[1], group, file[3], file[4], file[5]))
+				return True
+			else:
+				update_audit("You are not the current owner of this file")
+				return False
+
+	update_audit("A file with the name " + name + " does not exist")
+	return False
+
+"""
+A boolean function which returns True if the account with the input username is a member of the group with the given groupname
+"""
+def in_group(groupname, username):
+	global groups_list
+
+	for group in groups_list:
+		if(group[0] == groupname):
+			for user in group[1]:
+				if(user == username):
+					return True
+	return False
+
+"""
+A function which gets the tuple in the file list representing a file with the input file name
+"""
+def fetch_file_info(filename):
+	for file in files_list:
+		if(file[0] == filename):
+			return file
+	return False
+
+"""
+A function which reads a file with the given file name. Used as a helper function for the read command function
+"""
+def read_file(filename):
+	readFile = open(filename, "r")
+	update_audit("Reading from file " + filename + ":")
+	update_audit(readFile.read())
+	readFile.close()
+
+"""
+A function which writes to a file with the given file name. Used as a helper function for the write command function
+"""
+def write_file(filename, text):
+	writeFile = open(filename, "a")
+	update_audit("Writing message to file " + filename + ": " + text)
+	writeFile.write(text + "\n")
+	writeFile.close()
+
+"""
+A function which creates the groups.txt file just before the end of program execution
+"""
+def group_file():
+	global groups_list
+
+	groupFile = open("groups.txt", "w")
+	groupFile.write("")
+	groupFile.close()
+
+
+	groupFile = open("groups.txt", "a")
+	for group in groups_list:
+		groupFile.write(group[0] + ": ")
+		for user in group[1]:
+			groupFile.write(user + " ")
+		groupFile.write("\n")
+	groupFile.close()
+
+"""
+A function which creates the files.txt file just before the end of program execution
+"""
+def files_file():
+	global groups_list
+
+	filesFile = open("files.txt", "w")
+	filesFile.write("")
+	filesFile.close()
+
+	filesFile = open("files.txt", "a")
+	for file in files_list:
+		filesFile.write(file[0] + ": " + file[1] + " " + file[2] + " " + file[3] + " " + file[4] + " " + file[5] + "\n")
+	filesFile.close()
+
+# Determine whether an appropriate amount of inputs were given to the program (needs the filename)
+if len(sys.argv) < 2:
+	raise Exception("Please enter the name of the file you would like to read command from")
+
+# Open the input file
+fileName = sys.argv[1]
+inputFile = open(fileName, "r")
+
+# Read through the input file and perform the function relating to the command on each line of the file
+currentLine = inputFile.readline()
+firstInstruction = currentLine.split()
+if(firstInstruction[0] != "useradd" or firstInstruction[1] != "root"):
+	update_audit("The first instruction MUST be \"useradd root password\"")
+else:
+
+	useradd_command(firstInstruction[1], firstInstruction[2])
+
+	currentLine = inputFile.readline()
+
+	while currentLine and not end_of_program:
+		command_handler(currentLine)
+		currentLine = inputFile.readline()
+
+inputFile.close()
+
+update_audit("End of program execution")

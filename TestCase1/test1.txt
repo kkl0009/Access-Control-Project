@@ -1,0 +1,29 @@
+useradd root secret_password
+login root secret_password
+useradd Alice abcde
+useradd Bob lemonfish
+useradd Eve hacker123
+groupadd security_group
+usergrp Alice security_group
+usergrp Bob security_group
+mkfile security_group_secret.txt
+chgrp security_group_secret.txt security_group
+chmod security_group_secret.txt rwx rw- ---
+logout
+login Alice abcde
+write security_group_secret.txt Meet at the secret spot at 16:00
+logout
+login Eve hacker123
+ls security_group_secret.txt
+read security_group_secret.txt
+chmod security_group_secret.txt --- --- rwx
+chown security_group_secret.txt Eve
+logout
+login Bob lemonfish
+read security_group_secret.txt
+write security_group_secret.txt Acknowledged!
+logout
+login Alice abcde
+read security_group_secret.txt
+logout
+end

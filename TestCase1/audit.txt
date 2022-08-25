@@ -1,0 +1,35 @@
+Created account root with password secret_password
+Successfully logged in as root
+Created account Alice with password abcde
+Created account Bob with password lemonfish
+Created account Eve with password hacker123
+Created a new group called security_group
+Added user Alice to group security_group
+Added user Bob to group security_group
+Created a new file called security_group_secret.txt which is owned by root
+Successfully changed the group of security_group_secret.txt to security_group
+Successfully changed permissions for security_group_secret.txt to rwx rw- ---
+Logging out of user root
+Successfully logged in as Alice
+Writing message to file security_group_secret.txt: Meet at the secret spot at 16:00 
+Logging out of user Alice
+Successfully logged in as Eve
+security_group_secret.txt: root security_group rwx rw- ---
+You do not have the appropriate permissions to read file security_group_secret.txt
+You are not the current owner of this file
+Only the root user can change the owner of a file
+Logging out of user Eve
+Successfully logged in as Bob
+Reading from file security_group_secret.txt:
+Meet at the secret spot at 16:00 
+
+Writing message to file security_group_secret.txt: Acknowledged! 
+Logging out of user Bob
+Successfully logged in as Alice
+Reading from file security_group_secret.txt:
+Meet at the secret spot at 16:00 
+Acknowledged! 
+
+Logging out of user Alice
+Writing groups.txt and files.txt
+End of program execution

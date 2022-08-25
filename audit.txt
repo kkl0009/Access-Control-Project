@@ -1,0 +1,39 @@
+Created account root with password @r00t(705)
+Successfully logged in as root
+Created account steveo with password d@man^304
+Created account rita with password #101'holla!
+Created a new group called testers
+There is already an account named "steveo"
+Logging out of user root
+Invalid login credentials, login failed
+Successfully logged in as steveo
+Created a new file called script which is owned by steveo
+Writing message to file script: echo Hello World! 
+Successfully changed permissions for script to -wx rw- --x
+A file with the name script2 does not exist
+You are not a member of group testers
+Executed script successfully
+Logging out of user steveo
+script: steveo nil -wx rw- --x
+Successfully logged in as root
+There is already an account named "rita"
+Successfully changed the group of script to testers
+A group with the name testers already exists
+Added user rita to group testers
+Added user steveo to group testers
+A file with the name script3 does not exist
+Executed script successfully
+Logging out of user root
+Successfully logged in as rita
+A file with the name script already exists
+Writing message to file script: echo Hello World! 
+Reading from file script:
+echo Hello World! 
+echo Hello World! 
+
+Executed script successfully
+Only the root user can create new groups
+Only the root user can add new users
+Logging out of user rita
+Writing groups.txt and files.txt
+End of program execution
