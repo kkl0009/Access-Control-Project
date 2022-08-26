@@ -1,6 +1,6 @@
 # Access Control
 
-**The main program code can be found in the file named "access"**
+**The main program code can be found in the file named "access.py"**
 
 This program was created for one of my cybersecurity classes. You can find instructions to run it below. 
 
@@ -19,7 +19,7 @@ It is intended to be run on the LCSEE Loud OVA, but should run just fine on any 
 
 In order to run the program, you need only run:
 
-	python3 access [filename]
+	python3 access.py [filename]
 
 Included are 2 folder, TestCase1 and TestCase2 containing the 2 test cases. They each include identical copies
 of the access program file if you would like to run them for yourself. There is also an access copy at the top
