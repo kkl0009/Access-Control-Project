@@ -1,5 +1,7 @@
 # Access Control
 
+**The main program code can be found in the file named "access"**
+
 This program was created for one of my cybersecurity classes. You can find instructions to run it below. 
 
 It is intended to be run with a file containing commands in the proper syntax, as per the requirements of the assignment. See the example scenarios for some example outputs.
