@@ -9,7 +9,9 @@ Each time the program is run, it will update the audit file with the result of e
 **View the original README file below**
 
 Name: Kollin Labowski
+
 Date: March 25, 2022
+
 This program was created for Programming Assignment 2 for CS 465
 It is intended to be run on the LCSEE Loud OVA, but should run just fine on any Linux OS
 
